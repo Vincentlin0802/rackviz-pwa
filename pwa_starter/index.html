@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>台球摆球可视化工具（全设备适配）</title>
+
+  <!-- PWA 必备：manifest 描述应用 -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- iOS 加到主屏幕时用的图标（你后面放一张 192x192 或 512x512 的png 到根目录就行） -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- 下面是你原来的样式 -->
+  <style>
+    /* ……这里保持你原来的 CSS 不变…… */
+  </style>
+</head>
+
+<body>
+  <!-- 这里保持你原来的结构不变 -->
+  <!-- ... 你的 header / container / footer ... -->
+
+  <script>
+    // ====== ① 注册 service worker（下一步我们来写文件）======
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(function(reg) {
+            console.log('Service worker registered.', reg);
+          })
+          .catch(function(err) {
+            console.log('Service worker register failed:', err);
+          });
+      });
+    }
+    // ====== ① 注册 service worker 结束 ======
+
+    // ====== 下面是你原来的脚本，保持不动 ======
+    // 台球颜色定义
+    const ballColors = {
+      1: '#FFCC00',
+      2: '#0066FF',
+      3: '#FF0000',
+      4: '#9900CC',
+      5: '#FF9900',
+      6: '#00CC66',
+      7: '#CC6600',
+      8: '#000000',
+      9: 'radial-gradient(circle at 30% 30%, white 0%, white 45%, #FFCC00 45%, #FFCC00 100%)',
+      10: 'radial-gradient(circle at 30% 30%, white 0%, white 45%, #0066FF 45%, #0066FF 100%)'
+    };
+    const textColors = {
+      1: '#000000', 2: '#FFFFFF', 3: '#FFFFFF', 4: '#FFFFFF',
+      5: '#000000', 6: '#000000', 7: '#FFFFFF', 8: '#FFFFFF',
+      9: '#000000', 10: '#000000'
+    };
+    let currentGameType = 'nine';
+    const nineBallBtn = document.getElementById('nineBallBtn');
+    const tenBallBtn = document.getElementById('tenBallBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const ballsContainer = document.getElementById('ballsContainer');
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderBalls();
+      window.addEventListener('resize', renderBalls);
+
+      nineBallBtn.addEventListener('click', () => {
+        currentGameType = 'nine';
+        updateButtons();
+        renderBalls();
+      });
+
+      tenBallBtn.addEventListener('click', () => {
+        currentGameType = 'ten';
+        updateButtons();
+        renderBalls();
+      });
+
+      shuffleBtn.addEventListener('click', () => {
+        shuffleBtn.classList.add('animate-shuffle');
+        setTimeout(() => {
+          shuffleBtn.classList.remove('animate-shuffle');
+          renderBalls();
+        }, 500);
+      });
+    });
+
+    function updateButtons() {
+      if (currentGameType === 'nine') {
+        nineBallBtn.className = 'nine-btn';
+        tenBallBtn.className = 'ten-btn';
+      } else {
+        nineBallBtn.className = 'ten-btn';
+        tenBallBtn.className = 'nine-btn';
+      }
+    }
+
+    function generateOrder(type) {
+      if (type === 'nine') {
+        const others = [2,3,4,5,6,7,8];
+        shuffle(others);
+        return [1, others[0], others[1], others[2], 9, others[3], others[4], others[5], others[6]];
+      } else {
+        const others = [2,3,4,5,6,7,8,9];
+        shuffle(others);
+        return [1, others[0], others[1], others[2], 10, others[3], others[4], others[5], others[6], others[7]];
+      }
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function calculatePositions(type, ballSize) {
+      const positions = [];
+      const screenWidth = window.innerWidth;
+      const gapRatio = screenWidth < 576 ? 0.4 : 0.5;
+
+      if (type === 'nine') {
+        const horizontalGap = ballSize * gapRatio;
+        const verticalGap = ballSize * 0.8;
+        const rowY = [-2, -1, 0, 1, 2];
+
+        positions.push({x: 0, y: rowY[0] * verticalGap});
+        positions.push({x: -0.7 * horizontalGap, y: rowY[1] * verticalGap});
+        positions.push({x: 0.7 * horizontalGap, y: rowY[1] * verticalGap});
+        positions.push({x: -1.5 * horizontalGap, y: rowY[2] * verticalGap});
+        positions.push({x: 0, y: rowY[2] * verticalGap});
+        positions.push({x: 1.5 * horizontalGap, y: rowY[2] * verticalGap});
+        positions.push({x: -0.7 * horizontalGap, y: rowY[3] * verticalGap});
+        positions.push({x: 0.7 * horizontalGap, y: rowY[3] * verticalGap});
+        positions.push({x: 0, y: rowY[4] * verticalGap});
+      } else {
+        const gap = ballSize * (screenWidth < 576 ? 0.7 : 0.9);
+        const rowY = [-1.5, -0.5, 0.5, 1.5];
+
+        positions.push({x: 0, y: rowY[0] * gap});
+        positions.push({x: -0.5 * gap, y: rowY[1] * gap});
+        positions.push({x: 0.5 * gap, y: rowY[1] * gap});
+        positions.push({x: -1 * gap, y: rowY[2] * gap});
+        positions.push({x: 0, y: rowY[2] * gap});
+        positions.push({x: 1 * gap, y: rowY[2] * gap});
+        positions.push({x: -1.5 * gap, y: rowY[3] * gap});
+        positions.push({x: -0.5 * gap, y: rowY[3] * gap});
+        positions.push({x: 0.5 * gap, y: rowY[3] * gap});
+        positions.push({x: 1.5 * gap, y: rowY[3] * gap});
+      }
+
+      return positions;
+    }
+
+    function renderBalls() {
+      ballsContainer.innerHTML = '';
+
+      const containerWidth = ballsContainer.clientWidth;
+      const screenWidth = window.innerWidth;
+      const maxBallSize = screenWidth < 576 
+        ? (currentGameType === 'nine' ? 35 : 30)
+        : screenWidth < 768 
+          ? (currentGameType === 'nine' ? 45 : 40)
+          : (currentGameType === 'nine' ? 60 : 50);
+
+      const ballSize = Math.min(
+        Math.floor(containerWidth / (currentGameType === 'nine' ? 5 : 7)),
+        maxBallSize
+      );
+
+      const order = generateOrder(currentGameType);
+      const positions = calculatePositions(currentGameType, ballSize);
+
+      order.forEach((num, index) => {
+        const pos = positions[index];
+        const ball = document.createElement('div');
+        ball.className = 'ball opacity-0';
+        ball.style.width = `${ballSize}px`;
+        ball.style.height = `${ballSize}px`;
+        ball.style.left = `calc(50% + ${pos.x}px)`;
+        ball.style.top = `calc(50% + ${pos.y}px)`;
+        ball.style.background = ballColors[num];
+        ball.style.color = textColors[num];
+        ball.textContent = num;
+
+        ball.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          ball.style.transform = 'scale(1.1) translate(-45%, -45%)';
+        });
+        ball.addEventListener('touchend', () => {
+          ball.style.transform = 'scale(1) translate(-50%, -50%)';
+        });
+
+        ballsContainer.appendChild(ball);
+        setTimeout(() => {
+          ball.classList.add('animate-drop');
+        }, index * 50);
+      });
+    }
+  </script>
+</body>
+</html>
