@@ -2,8 +2,15 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>台球摆球可视化工具（全设备适配）</title>
+
+  <!-- PWA 相关（manifest + iOS 图标） -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#0F5929">
+
   <style>
     * {
       margin: 0;
@@ -246,6 +253,15 @@
   </footer>
 
   <script>
+    // 注册 service worker（PWA 可选，如果你已经有 service-worker.js）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('service-worker.js').catch(function (err) {
+          console.log('SW register failed:', err);
+        });
+      });
+    }
+
     const ballColors = {
       1: '#FFCC00',
       2: '#0066FF',
@@ -309,11 +325,11 @@
 
     function generateOrder(type) {
       if (type === 'nine') {
-        const others = [2,3,4,5,6,7,8];
+        const others = [2, 3, 4, 5, 6, 7, 8];
         shuffle(others);
         return [1, others[0], others[1], others[2], 9, others[3], others[4], others[5], others[6]];
       } else {
-        const others = [2,3,4,5,6,7,8,9];
+        const others = [2, 3, 4, 5, 6, 7, 8, 9];
         shuffle(others);
         return [1, others[0], others[1], others[2], 10, others[3], others[4], others[5], others[6], others[7]];
       }
@@ -337,29 +353,29 @@
         const verticalGap = ballSize * 0.8;
         const rowY = [-2, -1, 0, 1, 2];
 
-        positions.push({x: 0, y: rowY[0] * verticalGap});
-        positions.push({x: -0.7 * horizontalGap, y: rowY[1] * verticalGap});
-        positions.push({x: 0.7 * horizontalGap, y: rowY[1] * verticalGap});
-        positions.push({x: -1.5 * horizontalGap, y: rowY[2] * verticalGap});
-        positions.push({x: 0, y: rowY[2] * verticalGap});
-        positions.push({x: 1.5 * horizontalGap, y: rowY[2] * verticalGap});
-        positions.push({x: -0.7 * horizontalGap, y: rowY[3] * verticalGap});
-        positions.push({x: 0.7 * horizontalGap, y: rowY[3] * verticalGap});
-        positions.push({x: 0, y: rowY[4] * verticalGap});
+        positions.push({ x: 0, y: rowY[0] * verticalGap });
+        positions.push({ x: -0.7 * horizontalGap, y: rowY[1] * verticalGap });
+        positions.push({ x: 0.7 * horizontalGap, y: rowY[1] * verticalGap });
+        positions.push({ x: -1.5 * horizontalGap, y: rowY[2] * verticalGap });
+        positions.push({ x: 0, y: rowY[2] * verticalGap });
+        positions.push({ x: 1.5 * horizontalGap, y: rowY[2] * verticalGap });
+        positions.push({ x: -0.7 * horizontalGap, y: rowY[3] * verticalGap });
+        positions.push({ x: 0.7 * horizontalGap, y: rowY[3] * verticalGap });
+        positions.push({ x: 0, y: rowY[4] * verticalGap });
       } else {
         const gap = ballSize * (screenWidth < 576 ? 0.7 : 0.9);
         const rowY = [-1.5, -0.5, 0.5, 1.5];
 
-        positions.push({x: 0, y: rowY[0] * gap});
-        positions.push({x: -0.5 * gap, y: rowY[1] * gap});
-        positions.push({x: 0.5 * gap, y: rowY[1] * gap});
-        positions.push({x: -1 * gap, y: rowY[2] * gap});
-        positions.push({x: 0, y: rowY[2] * gap});
-        positions.push({x: 1 * gap, y: rowY[2] * gap});
-        positions.push({x: -1.5 * gap, y: rowY[3] * gap});
-        positions.push({x: -0.5 * gap, y: rowY[3] * gap});
-        positions.push({x: 0.5 * gap, y: rowY[3] * gap});
-        positions.push({x: 1.5 * gap, y: rowY[3] * gap});
+        positions.push({ x: 0, y: rowY[0] * gap });
+        positions.push({ x: -0.5 * gap, y: rowY[1] * gap });
+        positions.push({ x: 0.5 * gap, y: rowY[1] * gap });
+        positions.push({ x: -1 * gap, y: rowY[2] * gap });
+        positions.push({ x: 0, y: rowY[2] * gap });
+        positions.push({ x: 1 * gap, y: rowY[2] * gap });
+        positions.push({ x: -1.5 * gap, y: rowY[3] * gap });
+        positions.push({ x: -0.5 * gap, y: rowY[3] * gap });
+        positions.push({ x: 0.5 * gap, y: rowY[3] * gap });
+        positions.push({ x: 1.5 * gap, y: rowY[3] * gap });
       }
 
       return positions;
@@ -370,9 +386,9 @@
 
       const containerWidth = ballsContainer.clientWidth;
       const screenWidth = window.innerWidth;
-      const maxBallSize = screenWidth < 576 
+      const maxBallSize = screenWidth < 576
         ? (currentGameType === 'nine' ? 35 : 30)
-        : screenWidth < 768 
+        : screenWidth < 768
           ? (currentGameType === 'nine' ? 45 : 40)
           : (currentGameType === 'nine' ? 60 : 50);
 
@@ -389,14 +405,14 @@
         const ball = document.createElement('div');
         ball.className = 'ball';
 
-        ball.style.width  = ballSize + 'px';
+        ball.style.width = ballSize + 'px';
         ball.style.height = ballSize + 'px';
-        ball.style.left   = 'calc(50% + ' + pos.x + 'px)';
-        ball.style.top    = 'calc(50% + ' + pos.y + 'px)';
+        ball.style.left = 'calc(50% + ' + pos.x + 'px)';
+        ball.style.top = 'calc(50% + ' + pos.y + 'px)';
 
         ball.style.background = ballColors[num];
-        ball.style.color      = textColors[num];
-        ball.textContent      = num;
+        ball.style.color = textColors[num];
+        ball.textContent = num;
 
         ball.addEventListener('touchstart', (e) => {
           e.preventDefault();
@@ -415,4 +431,5 @@
   </script>
 </body>
 </html>
+
 
