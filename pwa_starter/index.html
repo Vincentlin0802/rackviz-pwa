@@ -4,40 +4,248 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>台球摆球可视化工具（全设备适配）</title>
-
-  <!-- PWA 必备：manifest 描述应用 -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- iOS 加到主屏幕时用的图标（你后面放一张 192x192 或 512x512 的png 到根目录就行） -->
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-  <!-- 下面是你原来的样式 -->
   <style>
-    /* ……这里保持你原来的 CSS 不变…… */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      background-color: #f1f1f1;
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+    header {
+      background: linear-gradient(to right, #0F5929, #136b32);
+      color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 15px;
+    }
+    .control-panel {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .control-panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    .btn-group {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      padding: clamp(8px, 3vw, 12px) clamp(16px, 5vw, 20px);
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+      font-size: clamp(14px, 3vw, 16px);
+    }
+    .nine-btn {
+      background: #165DFF;
+      color: white;
+    }
+    .ten-btn {
+      background: #e0e0e0;
+      color: #333;
+    }
+    .shuffle-btn {
+      background: #0F5929;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    button:hover, button:active {
+      transform: scale(1.05);
+    }
+    .table-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      aspect-ratio: 16/9;
+      background: #8B4513;
+      border-radius: clamp(10px, 3vw, 20px);
+      padding: clamp(10px, 2vw, 20px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .table-surface {
+      width: 100%;
+      height: 100%;
+      background: #0F5929;
+      border-radius: clamp(8px, 2vw, 15px);
+      position: relative;
+      background-image: radial-gradient(#136b32 2px, transparent 2px);
+      background-size: 30px 30px;
+    }
+    .spot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    #ballsContainer {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      height: 90%;
+    }
+    .ball {
+      position: absolute;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      box-shadow: inset -3px -3px 6px rgba(0,0,0,0.3),
+                  inset 3px 3px 6px rgba(255,255,255,0.2);
+      transition: all 0.3s;
+      touch-action: manipulation;
+      font-size: clamp(10px, 2vw, 16px);
+      z-index: 20;
+    }
+    .ball:hover, .ball:active {
+      transform: scale(1.1) translate(-45%, -45%);
+    }
+    .rules {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    @media (min-width: 768px) {
+      .rules {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+    }
+    .rule-card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .rule-card h3 {
+      color: #165DFF;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+    .rule-card ul {
+      list-style: none;
+    }
+    .rule-card li {
+      margin: 6px 0;
+      display: flex;
+      align-items: start;
+      gap: 8px;
+      font-size: clamp(14px, 2vw, 16px);
+    }
+    .rule-card li:before {
+      content: "✓";
+      color: #0F5929;
+      font-weight: bold;
+    }
+    footer {
+      background: #333;
+      color: #aaa;
+      text-align: center;
+      padding: 15px;
+      margin-top: 30px;
+      font-size: 0.9rem;
+    }
+    @keyframes dropIn {
+      0% { transform: translateY(-50px) scale(0.5); opacity: 0; }
+      70% { transform: translateY(5px) scale(1.05); }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .animate-drop {
+      animation: dropIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes shuffle {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(-5deg); }
+      75% { transform: rotate(5deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .animate-shuffle {
+      animation: shuffle 0.5s ease-in-out;
+    }
   </style>
 </head>
-
 <body>
-  <!-- 这里保持你原来的结构不变 -->
-  <!-- ... 你的 header / container / footer ... -->
+  <header>
+    <div class="container">
+      <h1 style="font-size: clamp(1.5rem, 5vw, 2rem);">台球摆球可视化工具</h1>
+      <p style="font-size: clamp(0.9rem, 3vw, 1rem);">适配手机、平板、电脑，专业摆球参考</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="control-panel">
+      <h2>摆球设置</h2>
+      <div class="btn-group">
+        <button id="nineBallBtn" class="nine-btn">美式9球</button>
+        <button id="tenBallBtn" class="ten-btn">美式10球</button>
+        <button id="shuffleBtn" class="shuffle-btn">
+          <span>重新排列</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="table-surface">
+        <div class="spot"></div>
+        <div id="ballsContainer"></div>
+      </div>
+    </div>
+
+    <div class="rules">
+      <div class="rule-card">
+        <h3>美式9球规则（竖长菱形）</h3>
+        <ul>
+          <li>1号球（黄色）必须放在顶端（第一行，1个球）</li>
+          <li>9号球必须放在中心（第三行中间，共3个球）</li>
+          <li>第二行和第四行的球间距缩小，更靠近中心</li>
+        </ul>
+      </div>
+      <div class="rule-card">
+        <h3>美式10球规则（三角形）</h3>
+        <ul>
+          <li>1号球（黄色）必须放在顶端（第一行，1个球）</li>
+          <li>10号球必须放在中心（第三行中间）</li>
+          <li>行数为1-2-3-4，整体呈三角形</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2023 台球摆球可视化工具 | 全设备离线使用</p>
+  </footer>
 
   <script>
-    // ====== ① 注册 service worker（下一步我们来写文件）======
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(function(reg) {
-            console.log('Service worker registered.', reg);
-          })
-          .catch(function(err) {
-            console.log('Service worker register failed:', err);
-          });
-      });
-    }
-    // ====== ① 注册 service worker 结束 ======
-
-    // ====== 下面是你原来的脚本，保持不动 ======
-    // 台球颜色定义
     const ballColors = {
       1: '#FFCC00',
       2: '#0066FF',
@@ -50,12 +258,15 @@
       9: 'radial-gradient(circle at 30% 30%, white 0%, white 45%, #FFCC00 45%, #FFCC00 100%)',
       10: 'radial-gradient(circle at 30% 30%, white 0%, white 45%, #0066FF 45%, #0066FF 100%)'
     };
+
     const textColors = {
       1: '#000000', 2: '#FFFFFF', 3: '#FFFFFF', 4: '#FFFFFF',
       5: '#000000', 6: '#000000', 7: '#FFFFFF', 8: '#FFFFFF',
       9: '#000000', 10: '#000000'
     };
+
     let currentGameType = 'nine';
+
     const nineBallBtn = document.getElementById('nineBallBtn');
     const tenBallBtn = document.getElementById('tenBallBtn');
     const shuffleBtn = document.getElementById('shuffleBtn');
@@ -176,14 +387,16 @@
       order.forEach((num, index) => {
         const pos = positions[index];
         const ball = document.createElement('div');
-        ball.className = 'ball opacity-0';
-        ball.style.width = `${ballSize}px`;
-        ball.style.height = `${ballSize}px`;
-        ball.style.left = `calc(50% + ${pos.x}px)`;
-        ball.style.top = `calc(50% + ${pos.y}px)`;
+        ball.className = 'ball';
+
+        ball.style.width  = ballSize + 'px';
+        ball.style.height = ballSize + 'px';
+        ball.style.left   = 'calc(50% + ' + pos.x + 'px)';
+        ball.style.top    = 'calc(50% + ' + pos.y + 'px)';
+
         ball.style.background = ballColors[num];
-        ball.style.color = textColors[num];
-        ball.textContent = num;
+        ball.style.color      = textColors[num];
+        ball.textContent      = num;
 
         ball.addEventListener('touchstart', (e) => {
           e.preventDefault();
@@ -202,3 +415,4 @@
   </script>
 </body>
 </html>
+
